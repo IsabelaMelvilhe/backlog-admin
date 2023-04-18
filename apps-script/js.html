@@ -1,0 +1,131 @@
+<script>
+
+    var modalFinalizacao = new bootstrap.Modal(document.getElementById('modalFinalizacao'), {
+      keyboard: false
+    })
+  
+    var todosStatus;
+  
+    google.script.run.withSuccessHandler(updateStatus).getStatus()
+  
+    function updateStatus(status){
+       
+       var select = document.getElementById("status")
+       select.innerHTML= `<option selected disabled>Status</option>`
+        
+       for(let i=0;i<status.length;i++){
+         select.innerHTML += `<option  >${status[i]}</option>`
+         
+  
+       }
+  
+       todosStatus = status
+  
+         google.script.run.withSuccessHandler(gerarTabela).getCasos()
+  
+  
+    }
+  
+    
+  
+    function gerarTabela(dados){
+      var tBody = document.querySelector("#tabelaBody")
+  
+      dados.forEach(function(caso){
+        var row = `<tr>
+          <td><a id="id_hugme" href="https://app.hugme.com.br/app.html#/tickets/minha-lista/p1/${caso.idHugme}/" target="_blank">${caso.idHugme}</a></td>
+          <td><a href="https://exemplo.zendesk.com/agent/tickets/${caso.ticket}" target="_blank">${caso.ticket}</a></td>
+          <td><select class="form-control" onchange="updateCaso(this)">`
+  
+  
+          for(let i= 0;i<todosStatus.length;i++){
+            if(todosStatus[i] == caso.status){
+              row += `<option selected>${todosStatus[i]}</option>`
+            }
+            else{
+              row += `<option>${todosStatus[i]}</option>`
+            }
+          }
+          
+          row += `</select></td>
+          <td><button type="button" class="btn btn-outline-success" onclick="abrirModal(this)">Finalizar</button></td></tr>`   
+        tBody.innerHTML += row
+      })
+  
+      console.log(dados)
+    }
+  
+    function updateCaso(caso){
+  
+      let pai = caso.parentNode
+      let id_hugme = pai.parentNode.querySelector("#id_hugme").textContent
+      console.log(id_hugme)
+      let status = caso.value
+      console.log (status)
+      google.script.run.updateCaso(id_hugme,status)
+  
+    }
+    
+    
+    document.getElementById("btn").addEventListener("click",salvarCaso);
+  
+        function salvarCaso(){
+  
+          var novoCaso = {
+            idHugme:document.getElementById("idHugme").value,
+            ticket:document.getElementById("ticket").value,
+            status:document.getElementById("status").value
+            
+          }
+             console.log(novoCaso)
+  
+          google.script.run.withSuccessHandler(salvou).salvarNaPlanilha(novoCaso);
+          gerarTabela([novoCaso])  
+  
+  
+        }
+  
+          function salvou (){
+  
+            document.getElementById("idHugme").value = "";
+            document.getElementById("ticket").value = "";
+            document.getElementById("status").selectedIndex = 0;
+   
+          }
+  
+          function abrirModal (element){
+  
+            let pai= element.parentNode
+            let id_hugme= pai.parentNode.querySelector("#id_hugme").textContent
+            console.log (id_hugme)
+            document.querySelector("#idHugmeModal").textContent= id_hugme
+            modalFinalizacao.show()
+  
+          }
+  
+          function finalizar (){
+  
+            let id_hugme= document.querySelector("#idHugmeModal").textContent
+            let dataFinalizacao= document.querySelector("#dataFinalizacao").value
+  
+            google.script.run.withSuccessHandler(removerCaso).updateCaso(id_hugme,"Respondido",true,dataFinalizacao)
+  
+          }
+  
+          function removerCaso(id_hugme){
+            var casos = document.querySelectorAll("#id_hugme")
+            casos.forEach((caso)=>{
+              if (caso.textContent == id_hugme){
+                let pai = caso.parentNode
+                let linha = pai.parentNode
+                linha.parentNode.removeChild(linha)
+  
+              }
+            })
+            
+  
+          }
+  
+  
+  </script>
+  
